@@ -1,0 +1,7 @@
+{
+  "numpy_peak_mb": 12.00094,
+  "tensorscript_peak_mb": 4.001262,
+  "N": 1000000,
+  "chain_length": 5,
+  "memory_reduction": 2.9992887244074495
+}

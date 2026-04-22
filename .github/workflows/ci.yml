@@ -1,0 +1,55 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  build-and-test:
+    strategy:
+      matrix:
+        os: [ubuntu-22.04, macos-14]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install dependencies (Ubuntu)
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y llvm-17-dev libllvm17 clang-17 cmake \
+          libopenblas-dev python3-pip
+        pip3 install pybind11 numpy torch --index-url https://download.pytorch.org/whl/cpu
+
+    - name: Install dependencies (macOS)
+      if: runner.os == 'macOS'
+      run: |
+        brew install llvm@17 cmake python3
+        echo "$(brew --prefix llvm@17)/bin" >> $GITHUB_PATH
+        pip3 install pybind11 numpy torch
+
+    - name: Configure
+      run: |
+        cmake -B build -DCMAKE_BUILD_TYPE=Release \
+          -DLLVM_DIR=$(llvm-config --cmakedir 2>/dev/null || \
+                       brew --prefix llvm@17 2>/dev/null | xargs -I{} echo {}/lib/cmake/llvm)
+
+    - name: Build
+      run: cmake --build build -j$(nproc 2>/dev/null || sysctl -n hw.logicalcpu)
+
+    - name: C++ unit tests
+      run: ctest --test-dir build --output-on-failure
+
+    - name: Install Python bindings
+      run: pip3 install -e . --no-build-isolation
+
+    - name: Correctness tests
+      run: python3 tests/test_correctness.py
+
+    - name: Quick benchmark (smoke)
+      run: python3 benchmarks/bench_elementwise.py
+
+    - name: Upload benchmark results
+      uses: actions/upload-artifact@v4
+      with:
+        name: benchmark-results-${{ matrix.os }}
+        path: results/

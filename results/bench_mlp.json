@@ -1,0 +1,23 @@
+{
+  "tensorscript": {
+    "mean_ms": 0.006514999899081886
+  },
+  "numpy": {
+    "mean_ms": 0.011393083957955241
+  },
+  "pytorch_eager": {
+    "mean_ms": 0.01242708193603903
+  },
+  "pytorch_compile": {
+    "mean_ms": 0.01812533405609429
+  },
+  "speedup_vs_numpy": 1.7487466054390561,
+  "speedup_vs_pytorch_eager": 1.9074569652395994,
+  "speedup_vs_pytorch_compile": 2.782092760837735,
+  "config": {
+    "hidden": 256,
+    "layers": 4,
+    "batch": 1,
+    "activation": "relu"
+  }
+}

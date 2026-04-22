@@ -1,0 +1,24 @@
+{
+  "numpy": {
+    "mean_ms": 2.791801249841228
+  },
+  "tensorscript": {
+    "mean_ms": 2.751380830013659
+  },
+  "pytorch_eager": {
+    "mean_ms": 1.0591606251546182
+  },
+  "config": {
+    "N": 1000000,
+    "chain_length": 5,
+    "ops": [
+      "add",
+      "relu",
+      "mul",
+      "sigmoid",
+      "tanh"
+    ]
+  },
+  "speedup_vs_numpy": 1.0146909578589194,
+  "speedup_vs_pytorch": 0.3849560241173012
+}

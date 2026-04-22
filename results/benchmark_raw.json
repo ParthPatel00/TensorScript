@@ -1,0 +1,322 @@
+[
+  {
+    "N": 10000,
+    "chain_length": 1,
+    "ops": [
+      "add"
+    ],
+    "numpy_ms": 0.0027962500462308526,
+    "tensorscript_ms": 0.003673749743029475,
+    "speedup": 0.7611433118264033
+  },
+  {
+    "N": 10000,
+    "chain_length": 2,
+    "ops": [
+      "add",
+      "relu"
+    ],
+    "numpy_ms": 0.006678749923594296,
+    "tensorscript_ms": 0.005616670241579413,
+    "speedup": 1.1890941850480126
+  },
+  {
+    "N": 10000,
+    "chain_length": 3,
+    "ops": [
+      "add",
+      "relu",
+      "mul"
+    ],
+    "numpy_ms": 0.0077162496745586395,
+    "tensorscript_ms": 0.0035562500124797225,
+    "speedup": 2.169771429871492
+  },
+  {
+    "N": 10000,
+    "chain_length": 5,
+    "ops": [
+      "add",
+      "relu",
+      "mul",
+      "sigmoid",
+      "tanh"
+    ],
+    "numpy_ms": 0.03325500001665205,
+    "tensorscript_ms": 0.02730292035266757,
+    "speedup": 1.2180015759157772
+  },
+  {
+    "N": 10000,
+    "chain_length": 8,
+    "ops": [
+      "add",
+      "relu",
+      "mul",
+      "sigmoid",
+      "tanh",
+      "neg",
+      "exp",
+      "sqrt"
+    ],
+    "numpy_ms": 0.058604159858077765,
+    "tensorscript_ms": 0.04406999971251935,
+    "speedup": 1.3297971463664333
+  },
+  {
+    "N": 100000,
+    "chain_length": 1,
+    "ops": [
+      "add"
+    ],
+    "numpy_ms": 0.015114170382730663,
+    "tensorscript_ms": 0.031992910080589354,
+    "speedup": 0.4724224943794872
+  },
+  {
+    "N": 100000,
+    "chain_length": 2,
+    "ops": [
+      "add",
+      "relu"
+    ],
+    "numpy_ms": 0.043269169982522726,
+    "tensorscript_ms": 0.029783749487251043,
+    "speedup": 1.4527777975383565
+  },
+  {
+    "N": 100000,
+    "chain_length": 3,
+    "ops": [
+      "add",
+      "relu",
+      "mul"
+    ],
+    "numpy_ms": 0.05318292009178549,
+    "tensorscript_ms": 0.031581249786540866,
+    "speedup": 1.6840030224025748
+  },
+  {
+    "N": 100000,
+    "chain_length": 5,
+    "ops": [
+      "add",
+      "relu",
+      "mul",
+      "sigmoid",
+      "tanh"
+    ],
+    "numpy_ms": 0.26535874989349395,
+    "tensorscript_ms": 0.28019084013067186,
+    "speedup": 0.947064328618806
+  },
+  {
+    "N": 100000,
+    "chain_length": 8,
+    "ops": [
+      "add",
+      "relu",
+      "mul",
+      "sigmoid",
+      "tanh",
+      "neg",
+      "exp",
+      "sqrt"
+    ],
+    "numpy_ms": 0.46453625021968037,
+    "tensorscript_ms": 0.4585470899473876,
+    "speedup": 1.0130611673339371
+  },
+  {
+    "N": 500000,
+    "chain_length": 1,
+    "ops": [
+      "add"
+    ],
+    "numpy_ms": 0.07354832952842116,
+    "tensorscript_ms": 0.15450250008143485,
+    "speedup": 0.47603326476694857
+  },
+  {
+    "N": 500000,
+    "chain_length": 2,
+    "ops": [
+      "add",
+      "relu"
+    ],
+    "numpy_ms": 0.19906791974790394,
+    "tensorscript_ms": 0.15497667016461492,
+    "speedup": 1.284502496643241
+  },
+  {
+    "N": 500000,
+    "chain_length": 3,
+    "ops": [
+      "add",
+      "relu",
+      "mul"
+    ],
+    "numpy_ms": 0.2470025001093745,
+    "tensorscript_ms": 0.15278750041034073,
+    "speedup": 1.616640755598468
+  },
+  {
+    "N": 500000,
+    "chain_length": 5,
+    "ops": [
+      "add",
+      "relu",
+      "mul",
+      "sigmoid",
+      "tanh"
+    ],
+    "numpy_ms": 1.3048841699492186,
+    "tensorscript_ms": 1.3806004100479186,
+    "speedup": 0.9451570204183324
+  },
+  {
+    "N": 500000,
+    "chain_length": 8,
+    "ops": [
+      "add",
+      "relu",
+      "mul",
+      "sigmoid",
+      "tanh",
+      "neg",
+      "exp",
+      "sqrt"
+    ],
+    "numpy_ms": 2.2596345795318484,
+    "tensorscript_ms": 2.290793750435114,
+    "speedup": 0.9863980897899048
+  },
+  {
+    "N": 1000000,
+    "chain_length": 1,
+    "ops": [
+      "add"
+    ],
+    "numpy_ms": 0.14953917008824646,
+    "tensorscript_ms": 0.31906041025649756,
+    "speedup": 0.4686860709795666
+  },
+  {
+    "N": 1000000,
+    "chain_length": 2,
+    "ops": [
+      "add",
+      "relu"
+    ],
+    "numpy_ms": 0.40704999992158264,
+    "tensorscript_ms": 0.31705958012025803,
+    "speedup": 1.2838281050116573
+  },
+  {
+    "N": 1000000,
+    "chain_length": 3,
+    "ops": [
+      "add",
+      "relu",
+      "mul"
+    ],
+    "numpy_ms": 0.5044204200385138,
+    "tensorscript_ms": 0.3165516600711271,
+    "speedup": 1.593485309554762
+  },
+  {
+    "N": 1000000,
+    "chain_length": 5,
+    "ops": [
+      "add",
+      "relu",
+      "mul",
+      "sigmoid",
+      "tanh"
+    ],
+    "numpy_ms": 2.6731962495250627,
+    "tensorscript_ms": 2.778620829922147,
+    "speedup": 0.9620586662052634
+  },
+  {
+    "N": 1000000,
+    "chain_length": 8,
+    "ops": [
+      "add",
+      "relu",
+      "mul",
+      "sigmoid",
+      "tanh",
+      "neg",
+      "exp",
+      "sqrt"
+    ],
+    "numpy_ms": 4.567725830129348,
+    "tensorscript_ms": 4.608649999718182,
+    "speedup": 0.9911201393919398
+  },
+  {
+    "N": 5000000,
+    "chain_length": 1,
+    "ops": [
+      "add"
+    ],
+    "numpy_ms": 1.0921183397294953,
+    "tensorscript_ms": 1.6819050000049174,
+    "speedup": 0.6493341417775096
+  },
+  {
+    "N": 5000000,
+    "chain_length": 2,
+    "ops": [
+      "add",
+      "relu"
+    ],
+    "numpy_ms": 2.3609441600274295,
+    "tensorscript_ms": 1.6839337500277907,
+    "speedup": 1.4020410007154176
+  },
+  {
+    "N": 5000000,
+    "chain_length": 3,
+    "ops": [
+      "add",
+      "relu",
+      "mul"
+    ],
+    "numpy_ms": 3.021115839947015,
+    "tensorscript_ms": 1.6898854199098423,
+    "speedup": 1.7877637172040906
+  },
+  {
+    "N": 5000000,
+    "chain_length": 5,
+    "ops": [
+      "add",
+      "relu",
+      "mul",
+      "sigmoid",
+      "tanh"
+    ],
+    "numpy_ms": 14.144599580322392,
+    "tensorscript_ms": 14.223853750154376,
+    "speedup": 0.9944280803765208
+  },
+  {
+    "N": 5000000,
+    "chain_length": 8,
+    "ops": [
+      "add",
+      "relu",
+      "mul",
+      "sigmoid",
+      "tanh",
+      "neg",
+      "exp",
+      "sqrt"
+    ],
+    "numpy_ms": 24.202985829906538,
+    "tensorscript_ms": 23.528520420077257,
+    "speedup": 1.02866586584228
+  }
+]
