@@ -15,23 +15,39 @@ jobs:
     - name: Install dependencies (Ubuntu)
       if: runner.os == 'Linux'
       run: |
+        wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
+        echo "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-18 main" | sudo tee /etc/apt/sources.list.d/llvm-18.list
         sudo apt-get update
-        sudo apt-get install -y llvm-17-dev libllvm17 clang-17 cmake \
-          libopenblas-dev python3-pip
+        sudo apt-get install -y llvm-18-dev libllvm18 clang-18 cmake \
+          libopenblas-dev python3-pip python3-dev
+        sudo update-alternatives --install /usr/bin/llvm-config llvm-config /usr/bin/llvm-config-18 100
         pip3 install pybind11 numpy torch --index-url https://download.pytorch.org/whl/cpu
 
     - name: Install dependencies (macOS)
       if: runner.os == 'macOS'
       run: |
-        brew install llvm@17 cmake python3
-        echo "$(brew --prefix llvm@17)/bin" >> $GITHUB_PATH
+        brew install llvm cmake
+        echo "$(brew --prefix llvm)/bin" >> $GITHUB_PATH
+        echo "LDFLAGS=-L$(brew --prefix llvm)/lib" >> $GITHUB_ENV
+        echo "CPPFLAGS=-I$(brew --prefix llvm)/include" >> $GITHUB_ENV
         pip3 install pybind11 numpy torch
 
-    - name: Configure
+    - name: Configure (Ubuntu)
+      if: runner.os == 'Linux'
       run: |
         cmake -B build -DCMAKE_BUILD_TYPE=Release \
-          -DLLVM_DIR=$(llvm-config --cmakedir 2>/dev/null || \
-                       brew --prefix llvm@17 2>/dev/null | xargs -I{} echo {}/lib/cmake/llvm)
+          -DLLVM_DIR=$(llvm-config-18 --cmakedir) \
+          -DCMAKE_C_COMPILER=clang-18 \
+          -DCMAKE_CXX_COMPILER=clang++-18
+
+    - name: Configure (macOS)
+      if: runner.os == 'macOS'
+      run: |
+        LLVM_PREFIX=$(brew --prefix llvm)
+        cmake -B build -DCMAKE_BUILD_TYPE=Release \
+          -DLLVM_DIR=$LLVM_PREFIX/lib/cmake/llvm \
+          -DCMAKE_C_COMPILER=$LLVM_PREFIX/bin/clang \
+          -DCMAKE_CXX_COMPILER=$LLVM_PREFIX/bin/clang++
 
     - name: Build
       run: cmake --build build -j$(nproc 2>/dev/null || sysctl -n hw.logicalcpu)
