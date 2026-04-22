@@ -29,12 +29,12 @@ Python DSL → Graph IR → [ConstFold → MatmulEpilogue → Fusion → DCE →
 
 The primary target workload: small-batch CPU inference with matmul + bias + activation layers. This is where both sources of framework overhead — per-op Python dispatch latency and intermediate tensor allocation — hurt the most.
 
-| Implementation | Latency (ms) | vs TensorScript | Heap allocs | Peak memory |
+| Implementation | Latency (µs) | vs TensorScript | Heap allocs | Peak memory |
 |---|---|---|---|---|
-| **TensorScript** | **0.0065** | — | **0** | **4 MB** |
-| NumPy | 0.0114 | 1.75× slower | ~3–5 per call | 12 MB |
-| PyTorch eager | 0.0124 | 1.91× slower | ~3–5 per call | — |
-| torch.compile | 0.0181 | 2.78× slower | ~3–5 per call | — |
+| **TensorScript** | **6.5** | — | **0** | **4 MB** |
+| NumPy | 11.4 | 1.75× slower | ~3–5 per call | 12 MB |
+| PyTorch eager | 12.4 | 1.91× slower | ~3–5 per call | — |
+| torch.compile | 18.1 | 2.78× slower | ~3–5 per call | — |
 
 *4-layer MLP, 256 hidden units, batch=1, ReLU activation.*
 
@@ -61,12 +61,12 @@ TensorScript wins on both axes simultaneously: faster and less memory. The reaso
 
 #### MLP inference — 4-layer, 256-hidden, batch=1
 
-| Implementation | Time (ms) | Speedup vs TensorScript |
+| Implementation | Time (µs) | Speedup vs TensorScript |
 |---|---|---|
-| TensorScript | 0.0065 | — |
-| NumPy | 0.0114 | 1.75× slower |
-| PyTorch eager | 0.0124 | 1.91× slower |
-| torch.compile | 0.0181 | 2.78× slower |
+| TensorScript | 6.5 | — |
+| NumPy | 11.4 | 1.75× slower |
+| PyTorch eager | 12.4 | 1.91× slower |
+| torch.compile | 18.1 | 2.78× slower |
 
 torch.compile is the *slowest* here: at batch=1 with 4 small layers, the compilation dispatch machinery costs more than any fusion benefit it provides.
 

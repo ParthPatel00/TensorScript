@@ -7,3 +7,4 @@ dist/
 *.so
 *.dylib
 .DS_Store
+DEEP_DIVE.md

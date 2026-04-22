@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TensorScript Benchmark Report</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 14px;
+    color: #1a1a1a;
+    background: #fff;
+    padding: 48px 56px;
+    max-width: 960px;
+    margin: 0 auto;
+    line-height: 1.5;
+  }
+
+  h1 { font-size: 26px; font-weight: 700; margin-bottom: 4px; }
+  h2 { font-size: 18px; font-weight: 600; margin-bottom: 4px; }
+  h3 { font-size: 14px; font-weight: 600; margin-bottom: 8px; color: #333; }
+
+  .subtitle { color: #666; font-size: 13px; margin-bottom: 28px; }
+
+  hr { border: none; border-top: 1px solid #e5e5e5; margin: 32px 0; }
+
+  /* ── Stat cards ── */
+  .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 8px; }
+  .stat-card { border: 1px solid #e5e5e5; border-radius: 8px; padding: 16px; }
+  .stat-card.success { border-color: #b7dfb8; background: #f3fbf3; }
+  .stat-card.info    { border-color: #b3d4f5; background: #f0f7ff; }
+  .stat-value { font-size: 28px; font-weight: 700; margin-bottom: 2px; }
+  .stat-card.success .stat-value { color: #1a7a1a; }
+  .stat-card.info    .stat-value { color: #0055b3; }
+  .stat-label { font-size: 12px; color: #666; }
+
+  /* ── Inline stat boxes (memory section) ── */
+  .stat-inline-grid { display: flex; flex-direction: column; gap: 12px; justify-content: center; }
+  .stat-inline { border: 1px solid #e5e5e5; border-radius: 8px; padding: 12px 16px; }
+  .stat-inline.success { border-color: #b7dfb8; background: #f3fbf3; }
+  .stat-inline.warning { border-color: #fcd7a0; background: #fffbf0; }
+  .stat-inline .stat-value { font-size: 22px; font-weight: 700; }
+  .stat-inline.success .stat-value { color: #1a7a1a; }
+  .stat-inline.warning .stat-value { color: #92400e; }
+  .stat-inline .stat-label { font-size: 12px; color: #666; }
+
+  /* ── Section ── */
+  .section { margin-bottom: 0; }
+  .section-header { margin-bottom: 4px; }
+  .section-sub { font-size: 12px; color: #888; margin-bottom: 16px; }
+
+  /* ── Tables ── */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 12px; }
+  th { text-align: left; font-weight: 600; font-size: 12px; color: #555;
+       border-bottom: 2px solid #e5e5e5; padding: 8px 10px; }
+  td { padding: 8px 10px; border-bottom: 1px solid #f0f0f0; vertical-align: top; }
+  tr.success td { background: #f3fbf3; }
+  tr.warning td { background: #fff9f0; }
+  tr.danger  td { background: #fff3f3; }
+
+  /* ── Bar charts ── */
+  .bar-chart { display: flex; flex-direction: column; gap: 10px; margin: 12px 0; }
+  .bar-row { display: flex; align-items: center; gap: 10px; }
+  .bar-label { width: 130px; font-size: 12px; color: #444; text-align: right; flex-shrink: 0; }
+  .bar-label.narrow { width: 60px; }
+  .bar-track { flex: 1; background: #f0f0f0; border-radius: 3px; height: 22px; }
+  .bar-fill  { height: 100%; border-radius: 3px; }
+  .bar-fill.ts      { background: #2563eb; }
+  .bar-fill.numpy   { background: #9ca3af; }
+  .bar-fill.pytorch { background: #d97706; }
+  .bar-fill.ptc     { background: #ef4444; }
+  .bar-fill.mem-ts  { background: #2563eb; }
+  .bar-fill.mem-np  { background: #9ca3af; }
+  .bar-fill.speedup { background: #2563eb; }
+  .bar-fill.speedup-loss { background: #ef4444; }
+  .bar-value { font-size: 12px; color: #444; white-space: nowrap; min-width: 48px; flex-shrink: 0; }
+
+  /* ── Two-column and card grids ── */
+  .two-col  { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .card { border: 1px solid #e5e5e5; border-radius: 8px; overflow: hidden; }
+  .card-header { font-size: 13px; font-weight: 600; padding: 10px 14px;
+                 background: #f8f8f8; border-bottom: 1px solid #e5e5e5; color: #333; }
+  .card-body { padding: 14px; }
+
+  /* ── Callouts ── */
+  .callout { border-radius: 6px; padding: 14px 16px; font-size: 13px;
+             line-height: 1.6; margin-top: 16px; }
+  .callout.info    { background: #f0f7ff; border-left: 4px solid #2563eb; }
+  .callout.warning { background: #fffbf0; border-left: 4px solid #d97706; }
+  .callout strong  { color: inherit; }
+  .callout .callout-sub { color: #666; font-size: 12px; margin-top: 8px; }
+
+  /* ── Badge ── */
+  .badge { display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 7px;
+           border-radius: 12px; margin-left: 4px; }
+  .badge.win  { background: #d1fae5; color: #065f46; }
+  .badge.lose { background: #fee2e2; color: #991b1b; }
+  .badge.tie  { background: #f3f4f6; color: #374151; }
+
+  /* ── Footer ── */
+  .footer { font-size: 11px; color: #aaa; text-align: center; margin-top: 12px; }
+
+  @media print {
+    body { padding: 24px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<h1>TensorScript Benchmark Results</h1>
+<p class="subtitle">Three dimensions: MLP inference latency, element-wise fusion, peak memory. All CPU, single-threaded, Apple M-series.</p>
+
+<!-- Headline stats -->
+<div class="stat-grid">
+  <div class="stat-card success">
+    <div class="stat-value">1.75×</div>
+    <div class="stat-label">vs NumPy — MLP</div>
+  </div>
+  <div class="stat-card success">
+    <div class="stat-value">1.91×</div>
+    <div class="stat-label">vs PyTorch eager — MLP</div>
+  </div>
+  <div class="stat-card success">
+    <div class="stat-value">2.78×</div>
+    <div class="stat-label">vs PyTorch compile — MLP</div>
+  </div>
+  <div class="stat-card info">
+    <div class="stat-value">3×</div>
+    <div class="stat-label">Peak memory reduction</div>
+  </div>
+</div>
+
+<hr>
+
+<!-- Section 1: MLP Inference -->
+<div class="section">
+  <div class="section-header"><h2>MLP Inference Latency</h2></div>
+  <div class="section-sub">4 layers · 256 hidden units · batch size 1 · ReLU activation. Lower is better.</div>
+
+  <div class="bar-chart">
+    <div class="bar-row">
+      <div class="bar-label">TensorScript</div>
+      <div class="bar-track"><div class="bar-fill ts" style="width:36%"></div></div>
+      <div class="bar-value">6.5 µs</div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">NumPy</div>
+      <div class="bar-track"><div class="bar-fill numpy" style="width:63%"></div></div>
+      <div class="bar-value">11.4 µs</div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">PyTorch eager</div>
+      <div class="bar-track"><div class="bar-fill pytorch" style="width:69%"></div></div>
+      <div class="bar-value">12.4 µs</div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">torch.compile</div>
+      <div class="bar-track"><div class="bar-fill ptc" style="width:100%"></div></div>
+      <div class="bar-value">18.1 µs</div>
+    </div>
+  </div>
+
+  <table>
+    <thead><tr><th>System</th><th>Latency (µs)</th><th>vs TensorScript</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr class="success"><td>TensorScript</td><td>6.5</td><td>—</td><td>BLAS GEMM + fused JIT epilogue, zero allocation</td></tr>
+      <tr class="warning"><td>NumPy</td><td>11.4</td><td>1.75× slower</td><td>3 separate kernel passes + 3 heap allocs</td></tr>
+      <tr class="warning"><td>PyTorch eager</td><td>12.4</td><td>1.91× slower</td><td>3× Python dispatch overhead + separate passes</td></tr>
+      <tr class="warning"><td>torch.compile</td><td>18.1</td><td>2.78× slower</td><td>Compilation overhead dominates at batch=1</td></tr>
+    </tbody>
+  </table>
+
+  <p style="font-size:12px; color:#888; margin-top:10px;">
+    PyTorch compile is slower than eager here because torch.compile's startup/dispatch cost
+    exceeds any fusion benefit at batch size 1 with only 4 small layers.
+  </p>
+</div>
+
+<hr>
+
+<!-- Section 2: Element-wise -->
+<div class="section">
+  <div class="section-header"><h2>Element-wise Chain — N = 1,000,000 floats, 5 ops</h2></div>
+  <div class="section-sub">Chain: add → relu → mul → sigmoid → tanh. Lower is better.</div>
+
+  <div class="bar-chart">
+    <div class="bar-row">
+      <div class="bar-label">PyTorch eager</div>
+      <div class="bar-track"><div class="bar-fill pytorch" style="width:38%"></div></div>
+      <div class="bar-value">1.06 ms</div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">TensorScript</div>
+      <div class="bar-track"><div class="bar-fill ts" style="width:99%"></div></div>
+      <div class="bar-value">2.75 ms</div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">NumPy</div>
+      <div class="bar-track"><div class="bar-fill numpy" style="width:100%"></div></div>
+      <div class="bar-value">2.79 ms</div>
+    </div>
+  </div>
+
+  <div class="callout warning">
+    PyTorch wins on this specific workload (1.06 ms vs 2.75 ms for TensorScript). The reason:
+    sigmoid and tanh are dominated by the <code>exp()</code> function. PyTorch uses Intel MKL's
+    vectorized exp() which is faster than LLVM's generic intrinsic. TensorScript matches NumPy but
+    neither beats PyTorch's specialized math library here.
+  </div>
+
+  <table>
+    <thead><tr><th>System</th><th>Latency (ms)</th><th>Note</th></tr></thead>
+    <tbody>
+      <tr class="success"><td>PyTorch eager</td><td>1.06</td><td>MKL vectorized exp() wins</td></tr>
+      <tr><td>TensorScript</td><td>2.75</td><td>Fused — 1 pass — but slower exp/sigmoid</td></tr>
+      <tr class="warning"><td>NumPy</td><td>2.79</td><td>Separate passes — barely slower than TS here</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<hr>
+
+<!-- Section 3: Fusion Benefit -->
+<div class="section">
+  <div class="section-header"><h2>Fusion Benefit vs Chain Length</h2></div>
+  <div class="section-sub">
+    How much faster TensorScript is than NumPy as you add more operations to the chain.
+    Speedup = NumPy time / TensorScript time. Above 1.0× = TensorScript wins.
+  </div>
+
+  <div class="two-col">
+    <div class="card">
+      <div class="card-header">N = 10,000 elements (10K)</div>
+      <div class="card-body">
+        <div class="bar-chart">
+          <div class="bar-row">
+            <div class="bar-label narrow">1 op</div>
+            <div class="bar-track"><div class="bar-fill speedup-loss" style="width:35%"></div></div>
+            <div class="bar-value">0.76×</div>
+          </div>
+          <div class="bar-row">
+            <div class="bar-label narrow">2 ops</div>
+            <div class="bar-track"><div class="bar-fill speedup" style="width:55%"></div></div>
+            <div class="bar-value">1.19×</div>
+          </div>
+          <div class="bar-row">
+            <div class="bar-label narrow">3 ops</div>
+            <div class="bar-track"><div class="bar-fill speedup" style="width:100%"></div></div>
+            <div class="bar-value">2.17×</div>
+          </div>
+          <div class="bar-row">
+            <div class="bar-label narrow">5 ops</div>
+            <div class="bar-track"><div class="bar-fill speedup" style="width:56%"></div></div>
+            <div class="bar-value">1.22×</div>
+          </div>
+          <div class="bar-row">
+            <div class="bar-label narrow">8 ops</div>
+            <div class="bar-track"><div class="bar-fill speedup" style="width:61%"></div></div>
+            <div class="bar-value">1.33×</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">N = 5,000,000 elements (5M)</div>
+      <div class="card-body">
+        <div class="bar-chart">
+          <div class="bar-row">
+            <div class="bar-label narrow">1 op</div>
+            <div class="bar-track"><div class="bar-fill speedup-loss" style="width:36%"></div></div>
+            <div class="bar-value">0.65×</div>
+          </div>
+          <div class="bar-row">
+            <div class="bar-label narrow">2 ops</div>
+            <div class="bar-track"><div class="bar-fill speedup" style="width:78%"></div></div>
+            <div class="bar-value">1.40×</div>
+          </div>
+          <div class="bar-row">
+            <div class="bar-label narrow">3 ops</div>
+            <div class="bar-track"><div class="bar-fill speedup" style="width:100%"></div></div>
+            <div class="bar-value">1.79×</div>
+          </div>
+          <div class="bar-row">
+            <div class="bar-label narrow">5 ops</div>
+            <div class="bar-track"><div class="bar-fill speedup" style="width:55%"></div></div>
+            <div class="bar-value">0.99×</div>
+          </div>
+          <div class="bar-row">
+            <div class="bar-label narrow">8 ops</div>
+            <div class="bar-track"><div class="bar-fill speedup" style="width:58%"></div></div>
+            <div class="bar-value">1.03×</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h3 style="margin-top: 20px;">What this shows</h3>
+  <table>
+    <thead><tr><th>Chain length</th><th>Why TensorScript wins or loses</th></tr></thead>
+    <tbody>
+      <tr class="danger"><td>1 op</td><td>TensorScript is slower — JIT call overhead with nothing to amortize</td></tr>
+      <tr><td>2 ops</td><td>Break-even (~1.2×). Fusion starts to pay off</td></tr>
+      <tr class="success"><td>3 ops</td><td>Clear win at 10K (~2.2×). Fusion eliminates 2 extra memory passes</td></tr>
+      <tr class="warning"><td>5 ops (with sigmoid/tanh)</td><td>Gain is reduced — exp() cost dominates and NumPy uses optimized libm</td></tr>
+      <tr><td>8 ops</td><td>Modest win (~1.3×) — fusion reduces passes but math ops are expensive</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<hr>
+
+<!-- Section 4: Memory -->
+<div class="section">
+  <div class="section-header"><h2>Peak Memory Usage</h2></div>
+  <div class="section-sub">N = 1,000,000 floats · 5-op chain · lower is better.</div>
+
+  <div class="two-col" style="align-items: center;">
+    <div>
+      <div class="bar-chart">
+        <div class="bar-row">
+          <div class="bar-label">NumPy</div>
+          <div class="bar-track"><div class="bar-fill mem-np" style="width:100%"></div></div>
+          <div class="bar-value">12.0 MB</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">TensorScript</div>
+          <div class="bar-track"><div class="bar-fill mem-ts" style="width:33%"></div></div>
+          <div class="bar-value">4.0 MB</div>
+        </div>
+      </div>
+    </div>
+    <div class="stat-inline-grid">
+      <div class="stat-inline warning">
+        <div class="stat-value">12.0 MB</div>
+        <div class="stat-label">NumPy peak memory</div>
+      </div>
+      <div class="stat-inline success">
+        <div class="stat-value">4.0 MB</div>
+        <div class="stat-label">TensorScript peak memory</div>
+      </div>
+      <p style="font-size:12px; color:#888; margin-top:4px;">
+        NumPy allocates one fresh buffer per operation (5 × ~2.4 MB).
+        TensorScript pre-allocates 2 slots at compile time and ping-pongs
+        between them — a 3× reduction in peak heap.
+      </p>
+    </div>
+  </div>
+</div>
+
+<hr>
+
+<!-- Section 5: When each system wins -->
+<div class="section">
+  <div class="section-header"><h2>When Does Each System Win?</h2></div>
+
+  <table style="margin-top: 8px;">
+    <thead><tr><th>Workload</th><th>Winner</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr class="success"><td>MLP inference, batch=1, small layers</td><td>TensorScript</td><td>Fused matmul epilogue + zero allocation beats per-op dispatch</td></tr>
+      <tr class="success"><td>Simple element-wise chains (add/relu/mul)</td><td>TensorScript</td><td>Fusion eliminates memory passes</td></tr>
+      <tr class="warning"><td>Chains with sigmoid/tanh, large arrays</td><td>PyTorch</td><td>MKL vectorized exp() outperforms LLVM generic intrinsic</td></tr>
+      <tr class="warning"><td>Large-batch matmul (batch > 32)</td><td>PyTorch / NumPy</td><td>BLAS dominates; TensorScript offers no advantage over direct BLAS</td></tr>
+      <tr class="success"><td>Any workload, peak RAM</td><td>TensorScript</td><td>BufferPool pre-allocation always uses fewer buffers than eager alloc</td></tr>
+      <tr class="warning"><td>Arbitrary models (conv, attention, etc.)</td><td>PyTorch</td><td>TensorScript only supports element-wise ops + matmul</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<hr>
+
+<!-- Section 6: Overall Verdict -->
+<div class="section">
+  <div class="section-header"><h2>Overall Verdict — End to End</h2></div>
+  <p style="font-size:13px; color:#555; margin-bottom:20px;">
+    A real ML inference pipeline is dominated by matmul layers with activations — exactly
+    what the MLP benchmark measures. Here is the full picture across speed and memory
+    combined, for the target workload: small-batch CPU inference.
+  </p>
+
+  <div class="two-col" style="margin-bottom: 20px;">
+    <div>
+      <h3>Speed — MLP latency, µs (lower is better)</h3>
+      <div class="bar-chart">
+        <div class="bar-row">
+          <div class="bar-label">TensorScript</div>
+          <div class="bar-track"><div class="bar-fill ts" style="width:36%"></div></div>
+          <div class="bar-value">6.5 µs</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">NumPy</div>
+          <div class="bar-track"><div class="bar-fill numpy" style="width:63%"></div></div>
+          <div class="bar-value">11.4 µs</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">PyTorch eager</div>
+          <div class="bar-track"><div class="bar-fill pytorch" style="width:69%"></div></div>
+          <div class="bar-value">12.4 µs</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">torch.compile</div>
+          <div class="bar-track"><div class="bar-fill ptc" style="width:100%"></div></div>
+          <div class="bar-value">18.1 µs</div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <h3>Memory — peak heap, MB (lower is better)</h3>
+      <div class="bar-chart">
+        <div class="bar-row">
+          <div class="bar-label">TensorScript</div>
+          <div class="bar-track"><div class="bar-fill mem-ts" style="width:33%"></div></div>
+          <div class="bar-value">4.0 MB</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">NumPy</div>
+          <div class="bar-track"><div class="bar-fill mem-np" style="width:100%"></div></div>
+          <div class="bar-value">12.0 MB</div>
+        </div>
+      </div>
+      <p style="font-size:12px; color:#888; margin-top:8px;">PyTorch memory not measured in this benchmark run.</p>
+    </div>
+  </div>
+
+  <h3>Scorecard — end-to-end ML inference</h3>
+  <table>
+    <thead>
+      <tr>
+        <th></th>
+        <th>TensorScript</th>
+        <th>NumPy</th>
+        <th>PyTorch eager</th>
+        <th>torch.compile</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>Latency (MLP, batch=1)</td><td><strong>6.5 µs</strong></td><td>11.4 µs</td><td>12.4 µs</td><td>18.1 µs</td></tr>
+      <tr class="success"><td>Speed vs TensorScript</td><td>—</td><td>1.75× slower</td><td>1.91× slower</td><td>2.78× slower</td></tr>
+      <tr><td>Peak memory</td><td><strong>4 MB</strong></td><td>12 MB</td><td>N/A measured</td><td>N/A measured</td></tr>
+      <tr><td>Heap allocs per inference</td><td><strong>0</strong></td><td>~3–5</td><td>~3–5</td><td>~3–5</td></tr>
+      <tr class="success"><td>Python dispatch overhead</td><td>None</td><td>Low</td><td>High (~2 µs/op)</td><td>Medium</td></tr>
+      <tr class="warning"><td>Supports GPU</td><td>No</td><td>No</td><td>Yes</td><td>Yes</td></tr>
+      <tr class="warning"><td>Supports arbitrary models</td><td>No</td><td>Yes (manual)</td><td>Yes</td><td>Yes</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout info" style="margin-top: 20px;">
+    <strong>Bottom line:</strong> For the specific workload TensorScript targets — CPU inference
+    at batch size 1 with matmul + activation layers — it is faster than every alternative
+    measured and uses 3× less peak memory than NumPy. It achieves this by eliminating
+    the two main sources of framework overhead: per-operation Python dispatch latency
+    and intermediate tensor allocation.
+    <div class="callout-sub">
+      Where TensorScript loses: large-batch GEMM (BLAS already wins), expensive transcendentals
+      like sigmoid/tanh on large arrays (PyTorch's MKL exp() is faster), and anything outside
+      its supported op set (convolutions, attention, etc.).
+    </div>
+  </div>
+</div>
+
+<hr>
+<p class="footer">
+  TensorScript · github.com/ParthPatel00/TensorScript · All measurements: Apple M-series, macOS, single-threaded CPU
+</p>
+
+</body>
+</html>
