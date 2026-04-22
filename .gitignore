@@ -8,3 +8,5 @@ dist/
 *.dylib
 .DS_Store
 DEEP_DIVE.md
+CLAUDE.md
+Plan.md

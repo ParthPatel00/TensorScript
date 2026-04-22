@@ -1,9 +1,19 @@
 digraph G {
   rankdir=TB;
   node [shape=box];
-  "0x10562ef10" [label="Input\na"];
-  "0x10562efb0" [label="Input\nb"];
-  "0x10562f050" [label="FusedKernel\nAdd\n[Add]"];
-  "0x10562ef10" -> "0x10562f050";
-  "0x10562efb0" -> "0x10562f050";
+  "0x81fff4280" [label="Input\na"];
+  "0x81fff43c0" [label="Input\nb"];
+  "0x81ffe9b80" [label="FusedKernel\nMul\n[Add,Relu,Mul]"];
+  "0x81fff4280" -> "0x81ffe9b80";
+  "0x81fff43c0" -> "0x81ffe9b80";
+  "0x81ffea3a0" [label="VecLibCall\nSigmoid"];
+  "0x81ffe9b80" -> "0x81ffea3a0";
+  "0x81ffe8f00" [label="VecLibCall\nTanh"];
+  "0x81ffea3a0" -> "0x81ffe8f00";
+  "0x81ffe9900" [label="FusedKernel\nNeg\n[Neg]"];
+  "0x81ffe8f00" -> "0x81ffe9900";
+  "0x81ffea120" [label="VecLibCall\nExp"];
+  "0x81ffe9900" -> "0x81ffea120";
+  "0x81ffe9e00" [label="FusedKernel\nSqrt\n[Sqrt]"];
+  "0x81ffea120" -> "0x81ffe9e00";
 }

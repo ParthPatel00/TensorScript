@@ -112,6 +112,7 @@
     font-size: 12px;
     color: #111;
   }
+  th.num { text-align: right; font-variant-numeric: tabular-nums; }
   td {
     padding: 7px 10px;
     vertical-align: top;
@@ -189,7 +190,10 @@
     border-top: 1px solid #eee;
   }
 
-  @media print { body { padding: 32px; } }
+  @media print {
+    body { padding: 32px; }
+    @page { margin: 1.5cm; }
+  }
 </style>
 </head>
 <body>
@@ -253,7 +257,7 @@
 
 <table>
   <thead>
-    <tr><th>System</th><th>Latency (µs)</th><th>Ratio vs Fuse</th><th>Primary bottleneck</th></tr>
+    <tr><th>System</th><th class="num">Latency (µs)</th><th class="num">Ratio vs Fuse</th><th>Primary bottleneck</th></tr>
   </thead>
   <tbody>
     <tr>
@@ -322,7 +326,7 @@
 
 <table>
   <thead>
-    <tr><th>System</th><th>Latency (ms)</th><th>Ratio vs Fuse</th><th>Mechanism</th></tr>
+    <tr><th>System</th><th class="num">Latency (ms)</th><th class="num">Ratio vs Fuse</th><th>Mechanism</th></tr>
   </thead>
   <tbody>
     <tr>
@@ -365,119 +369,62 @@
 <!-- ── §3: Fusion sweep ───────────────────────────────────────────────────── -->
 <h2><span class="sec-num">§3</span> Fusion Benefit vs Chain Length</h2>
 <p>
-  Speedup ratio (NumPy latency / Fuse latency) as chain length increases.
-  Values above 1.0 indicate Fuse wins. Measured at two array sizes to
-  show how the memory-bandwidth bottleneck scales.
+  Raw latency (ms) and Fuse speedup ratios vs NumPy and PyTorch as chain length increases,
+  measured at two array sizes. The two regimes behave differently: at N = 10K, data fits
+  in L1/L2 cache and per-op dispatch overhead dominates; at N = 5M, each array is 20 MB
+  and memory bandwidth dominates.
 </p>
 
-<div class="two-col">
-  <div>
-    <h3>N = 10,000</h3>
-    <div class="chart-block">
-      <div class="bar-row">
-        <div class="bar-label narrow">1 op</div>
-        <div class="bar-track"><div class="bar-fill f-ptc" style="width:32%"></div></div>
-        <div class="bar-val">0.73×</div>
-      </div>
-      <div class="bar-row">
-        <div class="bar-label narrow">2 ops</div>
-        <div class="bar-track"><div class="bar-fill f-ts" style="width:75%"></div></div>
-        <div class="bar-val">1.70×</div>
-      </div>
-      <div class="bar-row">
-        <div class="bar-label narrow">3 ops</div>
-        <div class="bar-track"><div class="bar-fill f-ts" style="width:92%"></div></div>
-        <div class="bar-val">2.10×</div>
-      </div>
-      <div class="bar-row">
-        <div class="bar-label narrow">5 ops</div>
-        <div class="bar-track"><div class="bar-fill f-ts" style="width:100%"></div></div>
-        <div class="bar-val">2.27×</div>
-      </div>
-      <div class="bar-row">
-        <div class="bar-label narrow">8 ops</div>
-        <div class="bar-track"><div class="bar-fill f-ts" style="width:100%"></div></div>
-        <div class="bar-val">2.27×</div>
-      </div>
-    </div>
-  </div>
-  <div>
-    <h3>N = 5,000,000</h3>
-    <div class="chart-block">
-      <div class="bar-row">
-        <div class="bar-label narrow">1 op</div>
-        <div class="bar-track"><div class="bar-fill f-ptc" style="width:34%"></div></div>
-        <div class="bar-val">0.61×</div>
-      </div>
-      <div class="bar-row">
-        <div class="bar-label narrow">2 ops</div>
-        <div class="bar-track"><div class="bar-fill f-ts" style="width:76%"></div></div>
-        <div class="bar-val">1.36×</div>
-      </div>
-      <div class="bar-row">
-        <div class="bar-label narrow">3 ops</div>
-        <div class="bar-track"><div class="bar-fill f-ts" style="width:96%"></div></div>
-        <div class="bar-val">1.72×</div>
-      </div>
-      <div class="bar-row">
-        <div class="bar-label narrow">5 ops</div>
-        <div class="bar-track"><div class="bar-fill f-ts" style="width:100%"></div></div>
-        <div class="bar-val">1.81×</div>
-      </div>
-      <div class="bar-row">
-        <div class="bar-label narrow">8 ops</div>
-        <div class="bar-track"><div class="bar-fill f-ts" style="width:97%"></div></div>
-        <div class="bar-val">1.75×</div>
-      </div>
-    </div>
-  </div>
-</div>
-
+<h3>N = 10,000 — cache-resident, dispatch-dominated</h3>
 <table>
   <thead>
-    <tr><th>Chain length</th><th>N = 10K speedup</th><th>N = 5M speedup</th><th>Interpretation</th></tr>
+    <tr><th>Chain length</th><th class="num">NumPy (µs)</th><th class="num">PyTorch (µs)</th><th class="num">Fuse (µs)</th><th class="num">vs NumPy</th><th class="num">vs PyTorch</th></tr>
   </thead>
   <tbody>
-    <tr>
-      <td>1 op</td>
-      <td class="num">0.73×</td>
-      <td class="num">0.61×</td>
-      <td>JIT compile overhead with no fusion benefit; Fuse loses</td>
-    </tr>
-    <tr>
-      <td>2 ops</td>
-      <td class="num">1.70×</td>
-      <td class="num">1.36×</td>
-      <td>Break-even; fusion eliminates one intermediate buffer pass</td>
-    </tr>
-    <tr>
-      <td>3 ops</td>
-      <td class="num">2.10×</td>
-      <td class="num">1.72×</td>
-      <td>Clear win; 2 fewer memory passes over the full array</td>
-    </tr>
-    <tr>
-      <td>5 ops</td>
-      <td class="num">2.27×</td>
-      <td class="num">1.81×</td>
-      <td>vForce dispatch for sigmoid/tanh compounds with fusion gain</td>
-    </tr>
-    <tr>
-      <td>8 ops</td>
-      <td class="num">2.27×</td>
-      <td class="num">1.75×</td>
-      <td>Plateau; gain saturates as data fits increasingly in L2/L3</td>
-    </tr>
+    <tr><td>1 op</td><td class="num">3</td><td class="num">2</td><td class="num">4</td><td class="num">0.73×</td><td class="num">0.60×</td></tr>
+    <tr><td>2 ops</td><td class="num">7</td><td class="num">5</td><td class="num">4</td><td class="num">1.75×</td><td class="num">1.22×</td></tr>
+    <tr><td>3 ops</td><td class="num">9</td><td class="num">7</td><td class="num">4</td><td class="num">2.12×</td><td class="num">1.64×</td></tr>
+    <tr><td>5 ops</td><td class="num">48</td><td class="num">42</td><td class="num">15</td><td class="num">3.12×</td><td class="num">2.75×</td></tr>
+    <tr><td>8 ops</td><td class="num">131</td><td class="num">189</td><td class="num">27</td><td class="num">4.95×</td><td class="num bold">7.13×</td></tr>
+  </tbody>
+</table>
+
+<h3>N = 5,000,000 — bandwidth-dominated</h3>
+<table>
+  <thead>
+    <tr><th>Chain length</th><th class="num">NumPy (ms)</th><th class="num">PyTorch (ms)</th><th class="num">Fuse (ms)</th><th class="num">vs NumPy</th><th class="num">vs PyTorch</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>1 op</td><td class="num">1.150</td><td class="num">0.639</td><td class="num">1.771</td><td class="num">0.65×</td><td class="num">0.36×</td></tr>
+    <tr><td>2 ops</td><td class="num">2.472</td><td class="num">1.129</td><td class="num">1.755</td><td class="num">1.41×</td><td class="num">0.64×</td></tr>
+    <tr><td>3 ops</td><td class="num">3.152</td><td class="num">1.780</td><td class="num">1.770</td><td class="num">1.78×</td><td class="num">1.01×</td></tr>
+    <tr><td>5 ops</td><td class="num">14.858</td><td class="num">8.362</td><td class="num">8.326</td><td class="num">1.78×</td><td class="num">1.00×</td></tr>
+    <tr><td>8 ops</td><td class="num">25.417</td><td class="num">11.974</td><td class="num">13.778</td><td class="num">1.84×</td><td class="num muted">0.87×</td></tr>
   </tbody>
 </table>
 
 <p>
-  At N = 10K, data fits in L1/L2 cache. The dominant savings are from eliminating
-  per-op Python dispatch overhead and reducing kernel launches, not bandwidth.
-  At N = 5M, each array is 20 MB — well beyond L3. The speedup is now
-  bandwidth-driven: Fuse reads and writes the array once per fused group;
-  NumPy reads and writes once per operation.
+  The two regimes tell different stories. At N = 10K, PyTorch's per-op dispatch overhead
+  accumulates faster than NumPy's as chains grow — at 8 ops, PyTorch (189 µs) is actually
+  <em>slower</em> than NumPy (131 µs), while Fuse (27 µs) is 7.13× faster than PyTorch.
+  Fusion eliminates both the kernel-launch overhead and the intermediate buffer passes in a
+  single fused loop.
 </p>
+<p>
+  At N = 5M, the picture changes. PyTorch consistently beats NumPy because its ATen kernels
+  use highly optimized SIMD (MKL / Accelerate) for each operation individually, and at
+  bandwidth-saturated sizes that per-op SIMD quality matters more than the number of passes.
+  Fuse ties PyTorch at 3–5 ops and falls slightly behind at 8 ops, where PyTorch's
+  per-op Accelerate routines outperform Fuse's fused loop for expensive transcendentals
+  (<code>exp</code>, <code>sqrt</code>) at very large N. Fuse still outperforms NumPy
+  by 1.8× at all chain lengths ≥ 3.
+</p>
+<div class="note">
+  Fuse's fusion advantage is largest in the cache-resident regime (small-to-medium N) where
+  dispatch overhead dominates. At very large N, where bandwidth is the ceiling, PyTorch's
+  per-op vectorized math libraries are competitive. The crossover vs PyTorch occurs around
+  N = 500K for chains without transcendentals and N = 1M–5M for chains that include them.
+</div>
 
 <hr>
 
@@ -509,7 +456,7 @@
 
 <table>
   <thead>
-    <tr><th>System</th><th>Peak memory</th><th>Ratio vs Fuse</th><th>Mechanism</th></tr>
+    <tr><th>System</th><th class="num">Peak memory</th><th class="num">Ratio vs Fuse</th><th>Mechanism</th></tr>
   </thead>
   <tbody>
     <tr>
@@ -565,10 +512,10 @@
   <thead>
     <tr>
       <th>Metric</th>
-      <th>Fuse</th>
-      <th>NumPy</th>
-      <th>PyTorch eager</th>
-      <th>torch.compile</th>
+      <th class="num">Fuse</th>
+      <th class="num">NumPy</th>
+      <th class="num">PyTorch eager</th>
+      <th class="num">torch.compile</th>
     </tr>
   </thead>
   <tbody>
@@ -602,17 +549,17 @@
     </tr>
     <tr>
       <td>Supports GPU</td>
-      <td class="muted">No</td>
-      <td class="muted">No</td>
-      <td>Yes</td>
-      <td>Yes</td>
+      <td class="num muted">No</td>
+      <td class="num muted">No</td>
+      <td class="num">Yes</td>
+      <td class="num">Yes</td>
     </tr>
     <tr>
       <td>Supports arbitrary ops</td>
-      <td class="muted">No (element-wise + matmul)</td>
-      <td>Yes</td>
-      <td>Yes</td>
-      <td>Yes</td>
+      <td class="num muted">No (element-wise + matmul)</td>
+      <td class="num">Yes</td>
+      <td class="num">Yes</td>
+      <td class="num">Yes</td>
     </tr>
   </tbody>
 </table>

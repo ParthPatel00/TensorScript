@@ -61,17 +61,34 @@ On Apple Silicon, the `VecLibSplitPass` routes `sigmoid` and `tanh` through vFor
 
 NumPy: one allocation per op. PyTorch: caching allocator reuses blocks but old + new tensors coexist during each assignment — peak is 2 × 4 MB = 8 MB. Fuse: 2 pre-allocated slots, ping-ponged at compile time — 2× less than PyTorch, 3× less than NumPy.
 
-### Fusion benefit vs chain length (NumPy baseline, N=10K)
+### Fusion benefit vs chain length
 
-| Chain length | Speedup vs NumPy |
-|---|---|
-| 1 op | 0.73× — JIT overhead with nothing to amortize; Fuse loses |
-| 2 ops | 1.70× |
-| 3 ops | 2.10× |
-| 5 ops | 2.27× |
-| 8 ops | 2.27× |
+The comparison vs PyTorch depends heavily on array size — two different regimes:
 
-Break-even is at 2 operations. From 3 ops onward, Fuse wins consistently.
+**N = 10,000 (cache-resident, dispatch-dominated)**
+
+| Chain length | vs NumPy | vs PyTorch |
+|---|---|---|
+| 1 op | 0.73× — Fuse loses (JIT overhead, nothing to amortize) | 0.60× — Fuse loses |
+| 2 ops | 1.75× | 1.22× |
+| 3 ops | 2.12× | 1.64× |
+| 5 ops | 3.12× | 2.75× |
+| 8 ops | 4.95× | **7.13×** — PyTorch's per-op dispatch accumulates badly |
+
+At N = 10K, PyTorch's per-op overhead compounds with chain length. At 8 ops, PyTorch (0.189 ms) is actually *slower* than NumPy (0.131 ms), while Fuse (0.027 ms) beats both by a wide margin.
+
+**N = 5,000,000 (bandwidth-dominated)**
+
+| Chain length | vs NumPy | vs PyTorch |
+|---|---|---|
+| 1 op | 0.65× — Fuse loses | 0.36× — Fuse loses |
+| 3 ops | 1.78× | ~1.0× — tied |
+| 5 ops | 1.78× | ~1.0× — tied |
+| 8 ops | 1.84× | 0.87× — PyTorch wins |
+
+At 5M elements (20 MB arrays), memory bandwidth is the ceiling. PyTorch's per-op Accelerate/MKL SIMD is very efficient at this scale and matches or beats Fuse. Fuse still consistently beats NumPy by 1.8× at chains ≥ 3 ops.
+
+> Full data across all sizes: [`results/benchmark-report.html`](results/benchmark-report.html) §3
 
 ### Where Fuse wins and loses
 
