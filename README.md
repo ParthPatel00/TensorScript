@@ -22,7 +22,7 @@ Python DSL → Graph IR → [ConstFold → MatmulEpilogue → VecLibSplit → Fu
 
 ## Benchmark results
 
-> Full methodology and charts: [`results/benchmark-report.html`](results/benchmark-report.html)
+> Full methodology and charts: [`results/benchmark-report.pdf`](results/benchmark-report.pdf)
 >
 > Run `python3 tests/test_correctness.py` before trusting any numbers. All 16 tests must pass.
 
@@ -75,7 +75,7 @@ The comparison vs PyTorch depends heavily on array size — two different regime
 | 5 ops | 3.12× | 2.75× |
 | 8 ops | 4.95× | **7.13×** — PyTorch's per-op dispatch accumulates badly |
 
-At N = 10K, PyTorch's per-op overhead compounds with chain length. At 8 ops, PyTorch (0.189 ms) is actually *slower* than NumPy (0.131 ms), while Fuse (0.027 ms) beats both by a wide margin.
+At N = 10K, PyTorch's per-op overhead compounds with chain length. At 8 ops, PyTorch (189 µs) is actually *slower* than NumPy (131 µs), while Fuse (27 µs) beats both by a wide margin.
 
 **N = 5,000,000 (bandwidth-dominated)**
 
@@ -88,7 +88,7 @@ At N = 10K, PyTorch's per-op overhead compounds with chain length. At 8 ops, PyT
 
 At 5M elements (20 MB arrays), memory bandwidth is the ceiling. PyTorch's per-op Accelerate/MKL SIMD is very efficient at this scale and matches or beats Fuse. Fuse still consistently beats NumPy by 1.8× at chains ≥ 3 ops.
 
-> Full data across all sizes: [`results/benchmark-report.html`](results/benchmark-report.html) §3
+> Full data across all sizes: [`results/benchmark-report.pdf`](results/benchmark-report.pdf) §3
 
 ### Where Fuse wins and loses
 
