@@ -5,6 +5,7 @@ on: [push, pull_request]
 jobs:
   build-and-test:
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-22.04, macos-14]
     runs-on: ${{ matrix.os }}
@@ -12,26 +13,31 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Install dependencies (Ubuntu)
+    # Use a managed Python so pip works without --break-system-packages on macOS
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    # Install pybind11/numpy from PyPI, torch from the CPU-only wheel index
+    - name: Install Python dependencies
+      run: |
+        pip install pybind11 numpy
+        pip install torch --index-url https://download.pytorch.org/whl/cpu
+
+    - name: Install LLVM and BLAS (Ubuntu)
       if: runner.os == 'Linux'
       run: |
-        wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
-        echo "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-18 main" | sudo tee /etc/apt/sources.list.d/llvm-18.list
+        wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key \
+          | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
+        echo "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-18 main" \
+          | sudo tee /etc/apt/sources.list.d/llvm-18.list
         sudo apt-get update
-        sudo apt-get install -y llvm-18-dev libllvm18 clang-18 cmake \
-          libopenblas-dev python3-pip python3-dev
-        sudo update-alternatives --install /usr/bin/llvm-config llvm-config /usr/bin/llvm-config-18 100
-        pip3 install pybind11 numpy
-        pip3 install torch --index-url https://download.pytorch.org/whl/cpu
+        sudo apt-get install -y llvm-18-dev libllvm18 clang-18 libopenblas-dev
 
-    - name: Install dependencies (macOS)
+    - name: Install LLVM (macOS)
       if: runner.os == 'macOS'
-      run: |
-        brew install llvm cmake
-        echo "$(brew --prefix llvm)/bin" >> $GITHUB_PATH
-        echo "LDFLAGS=-L$(brew --prefix llvm)/lib" >> $GITHUB_ENV
-        echo "CPPFLAGS=-I$(brew --prefix llvm)/include" >> $GITHUB_ENV
-        pip3 install pybind11 numpy torch
+      run: brew install llvm
 
     - name: Configure (Ubuntu)
       if: runner.os == 'Linux'
@@ -39,7 +45,9 @@ jobs:
         cmake -B build -DCMAKE_BUILD_TYPE=Release \
           -DLLVM_DIR=$(llvm-config-18 --cmakedir) \
           -DCMAKE_C_COMPILER=clang-18 \
-          -DCMAKE_CXX_COMPILER=clang++-18
+          -DCMAKE_CXX_COMPILER=clang++-18 \
+          -DPython3_EXECUTABLE=$(which python) \
+          -Dpybind11_DIR=$(python -c "import pybind11; print(pybind11.get_cmake_dir())")
 
     - name: Configure (macOS)
       if: runner.os == 'macOS'
@@ -47,8 +55,10 @@ jobs:
         LLVM_PREFIX=$(brew --prefix llvm)
         cmake -B build -DCMAKE_BUILD_TYPE=Release \
           -DLLVM_DIR=$LLVM_PREFIX/lib/cmake/llvm \
-          -DCMAKE_C_COMPILER=$LLVM_PREFIX/bin/clang \
-          -DCMAKE_CXX_COMPILER=$LLVM_PREFIX/bin/clang++
+          -DCMAKE_C_COMPILER=$(xcrun -f clang) \
+          -DCMAKE_CXX_COMPILER=$(xcrun -f clang++) \
+          -DPython3_EXECUTABLE=$(which python) \
+          -Dpybind11_DIR=$(python -c "import pybind11; print(pybind11.get_cmake_dir())")
 
     - name: Build
       run: cmake --build build -j$(nproc 2>/dev/null || sysctl -n hw.logicalcpu)
@@ -56,14 +66,16 @@ jobs:
     - name: C++ unit tests
       run: ctest --test-dir build --output-on-failure
 
-    - name: Install Python bindings
-      run: pip3 install -e . --no-build-isolation
-
-    - name: Correctness tests
-      run: python3 tests/test_correctness.py
+    # Point Python at the already-built .so rather than reinstalling via pip
+    - name: Python correctness tests
+      env:
+        PYTHONPATH: ${{ github.workspace }}/build
+      run: python tests/test_correctness.py
 
     - name: Quick benchmark (smoke)
-      run: python3 benchmarks/bench_elementwise.py
+      env:
+        PYTHONPATH: ${{ github.workspace }}/build
+      run: python benchmarks/bench_elementwise.py
 
     - name: Upload benchmark results
       uses: actions/upload-artifact@v4
