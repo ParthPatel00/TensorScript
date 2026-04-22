@@ -59,7 +59,7 @@ else()
 endif()
 
 # Aggressive optimization flags for the library itself
-target_compile_options(ts_core PRIVATE -O3 -march=native -fno-rtti)
+target_compile_options(ts_core PRIVATE -O3 -march=native -fno-rtti -fPIC)
 
 # ── Python bindings ───────────────────────────────────────────────────────────
 find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
