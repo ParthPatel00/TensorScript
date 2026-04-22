@@ -1,4 +1,5 @@
 #include "ts/passes.h"
+#include <functional>
 #include <unordered_set>
 
 namespace ts {
