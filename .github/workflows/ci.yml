@@ -32,8 +32,17 @@ jobs:
           | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
         echo "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-19 main" \
           | sudo tee /etc/apt/sources.list.d/llvm-19.list
-        sudo apt-get update
-        sudo apt-get install -y llvm-19-dev libllvm19 clang-19 libopenblas-dev
+        # Update only the LLVM repo (avoids hanging on azure.archive.ubuntu.com)
+        sudo apt-get update \
+          -o Dir::Etc::sourcelist="sources.list.d/llvm-19.list" \
+          -o Dir::Etc::sourceparts="-" \
+          -o Acquire::http::Timeout=30 \
+          -o Acquire::Retries=5
+        # libopenblas-dev is in the default repos (already cached on runner)
+        sudo apt-get install -y \
+          -o Acquire::http::Timeout=30 \
+          -o Acquire::Retries=5 \
+          llvm-19-dev libllvm19 clang-19 libopenblas-dev
 
     - name: Install LLVM (macOS)
       if: runner.os == 'macOS'
