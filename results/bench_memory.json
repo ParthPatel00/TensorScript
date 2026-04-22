@@ -1,7 +1,13 @@
 {
-  "numpy_peak_mb": 12.00094,
-  "tensorscript_peak_mb": 4.001262,
   "N": 1000000,
   "chain_length": 5,
-  "memory_reduction": 2.9992887244074495
+  "numpy_peak_mb": 12.0,
+  "tensorscript_peak_mb": 4.0,
+  "pytorch_peak_mb": 8.0,
+  "ts_vs_numpy_reduction": 3.0,
+  "ts_vs_pytorch_reduction": 2.0,
+  "methodology": {
+    "numpy_ts": "tracemalloc (CPython allocator hooks)",
+    "pytorch": "live-tensor-bytes tracking (c10 allocator bypasses tracemalloc)"
+  }
 }

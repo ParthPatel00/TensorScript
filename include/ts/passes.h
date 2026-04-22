@@ -35,6 +35,15 @@ struct BufferReusePass : PassBase {
     int num_slots = 0;
 };
 
+// Replaces standalone Sigmoid/Tanh/Exp/Log nodes with VecLibCall nodes so the
+// runtime can dispatch them through Apple's vForce (vvtanhf, vvexpf, etc.).
+// On non-Apple platforms this pass is a no-op: the subsequent FusionPass will
+// keep those ops in the scalar JIT loop unchanged.
+struct VecLibSplitPass : PassBase {
+    void run(Graph& g) override;
+    const char* name() const override { return "VecLibSplitPass"; }
+};
+
 void run_passes(Graph& g, bool verbose = false);
 
 } // namespace ts

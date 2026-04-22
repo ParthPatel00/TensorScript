@@ -31,7 +31,7 @@ if os.path.exists("results/benchmark_raw.json"):
     ax.axhline(1, color="gray", linestyle="--", linewidth=0.8)
     ax.set_xlabel("Chain length (number of fused ops)")
     ax.set_ylabel("Speedup over NumPy")
-    ax.set_title(f"TensorScript vs NumPy — Element-wise chain (N={N_TARGET:,})")
+    ax.set_title(f"Fuse vs NumPy — Element-wise chain (N={N_TARGET:,})")
     ax.set_xticks(lengths)
     ax.yaxis.set_minor_locator(ticker.AutoMinorLocator())
     for i, (l, s) in enumerate(zip(lengths, speedups)):
@@ -53,7 +53,7 @@ if os.path.exists("results/benchmark_raw.json"):
     ax.axhline(1, color="gray", linestyle="--", linewidth=0.8)
     ax.set_xlabel("Array size (N)")
     ax.set_ylabel("Speedup over NumPy")
-    ax.set_title(f"TensorScript vs NumPy — Array size sweep (chain={L_TARGET})")
+    ax.set_title(f"Fuse vs NumPy — Array size sweep (chain={L_TARGET})")
     ax.xaxis.set_major_formatter(ticker.FuncFormatter(lambda x, _: f"{int(x):,}"))
     ax.yaxis.set_minor_locator(ticker.AutoMinorLocator())
     plt.tight_layout()
@@ -67,8 +67,8 @@ if os.path.exists("results/bench_memory.json"):
         mem = json.load(f)
 
     fig, ax = plt.subplots(figsize=(5, 4))
-    labels = ["NumPy", "TensorScript"]
-    values = [mem["numpy_peak_mb"], mem["tensorscript_peak_mb"]]
+    labels = ["NumPy", "Fuse"]
+    values = [mem["numpy_peak_mb"], mem["fuse_peak_mb"]]
     colors = ["#C44E52", "#4C72B0"]
     bars = ax.bar(labels, values, color=colors, width=0.5)
     for bar, v in zip(bars, values):

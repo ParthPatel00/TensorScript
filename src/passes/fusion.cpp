@@ -144,7 +144,7 @@ void FusionPass::run(Graph& g) {
         }
     }
     if (total_merged > 0) {
-        std::cout << "[TensorScript] FusionPass: merged " << total_merged << " node(s) into FusedKernel(s)\n";
+        std::cout << "[Fuse] FusionPass: merged " << total_merged << " node(s) into FusedKernel(s)\n";
     }
 
     // Wrap any remaining live elementwise nodes that weren't merged into a chain.
@@ -158,7 +158,7 @@ void FusionPass::run(Graph& g) {
         wrapped++;
     }
     if (wrapped > 0) {
-        std::cout << "[TensorScript] FusionPass: wrapped " << wrapped
+        std::cout << "[Fuse] FusionPass: wrapped " << wrapped
                   << " isolated elementwise node(s) into FusedKernel(s)\n";
     }
 }

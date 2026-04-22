@@ -7,7 +7,7 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'build'))
 
 import numpy as np
-import tensorscript as ts
+import fuse as ts
 
 ATOL = 1e-5
 N = 100_000

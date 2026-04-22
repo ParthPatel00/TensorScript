@@ -44,7 +44,7 @@ TEST(Codegen, AddRelu) {
     LLVMCodegen cg;
     auto res = cg.emit(g, false);
 
-    TensorScriptJIT jit;
+    FuseJIT jit;
     jit.add_module(std::move(res.ctx), std::move(res.module));
 
     CompiledFunction cf = build_runtime(g, res.kernels, jit);
@@ -73,7 +73,7 @@ TEST(Codegen, SigmoidTanhChain) {
 
     LLVMCodegen cg;
     auto res = cg.emit(g, false);
-    TensorScriptJIT jit;
+    FuseJIT jit;
     jit.add_module(std::move(res.ctx), std::move(res.module));
     CompiledFunction cf = build_runtime(g, res.kernels, jit);
 

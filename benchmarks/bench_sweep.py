@@ -6,7 +6,7 @@ import sys, os, json, time
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'build'))
 
 import numpy as np
-import tensorscript as ts
+import fuse as ts
 
 WARMUP = 10
 RUNS = 100
@@ -56,7 +56,7 @@ for N in SIZES:
                 acc = NP_OPS[op](acc, b)
             return acc
 
-        # TensorScript
+        # Fuse
         g = ts.Graph()
         ah = g.input("a", [N]); bh = g.input("b", [N])
         x = ah
@@ -73,7 +73,7 @@ for N in SIZES:
 
         all_results.append({
             "N": N, "chain_length": L, "ops": ops,
-            "numpy_ms": np_ms, "tensorscript_ms": ts_ms,
+            "numpy_ms": np_ms, "fuse_ms": ts_ms,
             "speedup": np_ms / ts_ms
         })
 

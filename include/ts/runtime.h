@@ -20,7 +20,7 @@ struct BufferPool {
     float* get(int slot) { return slots[slot].data(); }
 };
 
-// A compiled, ready-to-call TensorScript function.
+// A compiled, ready-to-call Fuse function.
 struct KernelCall {
     KernelFn   fn          = nullptr;  // FusedKernel: void(float**, int, float*, int64_t)
     EpilogueFn epilogue_fn = nullptr;  // FusedMatmul: void(float*, float*, float*, int64_t, bool)
@@ -30,6 +30,9 @@ struct KernelCall {
     // GEMM dimensions (only when epilogue_fn != nullptr)
     int64_t M = 0, K = 0, N = 0;
     bool    has_bias = false;
+    // VecLibCall dispatch (Apple vecLib; ignored on Linux where is_veclib is always false)
+    bool      is_veclib  = false;
+    VecLibFn  veclib_fn  = VecLibFn::Exp;
 };
 
 // Special sentinel: graph input i is stored at slot -(i+1) (negative)
@@ -50,6 +53,6 @@ struct CompiledFunction {
 // Build a CompiledFunction from a compiled graph + JIT.
 CompiledFunction build_runtime(const Graph& g,
                                 const std::vector<std::pair<std::string, Node*>>& kernels,
-                                TensorScriptJIT& jit);
+                                FuseJIT& jit);
 
 } // namespace ts

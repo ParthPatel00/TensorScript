@@ -7,15 +7,49 @@
 #include <stdexcept>
 #include <unordered_map>
 
-// BLAS headers — on macOS use Accelerate, on Linux use OpenBLAS/cblas
+// BLAS + vecLib headers — on macOS use Accelerate (includes BLAS and vForce)
 #ifdef __APPLE__
 #  define ACCELERATE_NEW_LAPACK  // suppresses cblas deprecation warnings on macOS 13.3+
 #  include <Accelerate/Accelerate.h>
+#  include <vecLib/vForce.h>
 #else
 #  include <cblas.h>
 #endif
 
 namespace ts {
+
+// ── Apple vForce dispatch helpers ─────────────────────────────────────────────
+#ifdef __APPLE__
+// All functions: out[i] = fn(in[i]) for i in [0,n). in and out may differ.
+
+static void ts_veclib_exp(float* out, const float* in, int n) {
+    vvexpf(out, in, &n);
+}
+static void ts_veclib_log(float* out, const float* in, int n) {
+    vvlogf(out, in, &n);
+}
+static void ts_veclib_tanh(float* out, const float* in, int n) {
+    vvtanhf(out, in, &n);
+}
+
+// sigmoid(x) = 1/(1+exp(-x)), composed from vDSP + vvexpf, no temp buffer.
+static void ts_veclib_sigmoid(float* out, const float* in, int n) {
+    vDSP_vneg(in, 1, out, 1, (vDSP_Length)n);   // out = -in
+    vvexpf(out, out, &n);                         // out = exp(-in)
+    float one = 1.0f;
+    vDSP_vsadd(out, 1, &one, out, 1, (vDSP_Length)n); // out = 1+exp(-in)
+    vDSP_svdiv(&one, out, 1, out, 1, (vDSP_Length)n); // out = 1/(1+exp(-in))
+}
+
+static void dispatch_veclib(VecLibFn fn, float* out, const float* in, int n) {
+    switch (fn) {
+    case VecLibFn::Exp:     ts_veclib_exp    (out, in, n); break;
+    case VecLibFn::Log:     ts_veclib_log    (out, in, n); break;
+    case VecLibFn::Tanh:    ts_veclib_tanh   (out, in, n); break;
+    case VecLibFn::Sigmoid: ts_veclib_sigmoid(out, in, n); break;
+    }
+}
+#endif
 
 void BufferPool::allocate(const Graph& g) {
     // Find max slot index and required capacity per slot
@@ -47,7 +81,7 @@ static_assert(sizeof(EpilogueFn) == sizeof(KernelFn),
 
 CompiledFunction build_runtime(const Graph& g,
                                 const std::vector<std::pair<std::string, Node*>>& kernels,
-                                TensorScriptJIT& jit) {
+                                FuseJIT& jit) {
     CompiledFunction cf;
     cf.num_graph_inputs = (int)g.inputs.size();
     cf.pool.allocate(g);
@@ -65,35 +99,48 @@ CompiledFunction build_runtime(const Graph& g,
     cf.output_slot = node_slot.count(g.output) ? node_slot[g.output] : -1;
     cf.numel = g.output ? g.output->output_type.numel() : 0;
 
-    for (auto& [kname, node] : kernels) {
+    // Build a lookup from node* -> JIT kernel name so we can iterate in topo order.
+    std::unordered_map<Node*, std::string> jit_names;
+    for (auto& [kname, node] : kernels) jit_names[node] = kname;
+
+    // Emit KernelCalls in topological order so execution respects data dependencies.
+    for (auto* node : order) {
+        if (node->is_dead) continue;
         KernelCall kc;
-        kc.numel = node->output_type.numel();
+        kc.numel       = node->output_type.numel();
         kc.output_slot = node->buffer_slot;
 
-        if (node->kind == OpKind::FusedKernel) {
-            kc.fn = jit.lookup(kname);
+        if (node->kind == OpKind::FusedKernel && jit_names.count(node)) {
+            kc.fn = jit.lookup(jit_names[node]);
             for (auto* inp : node->inputs) {
                 assert(node_slot.count(inp));
                 kc.input_slots.push_back(node_slot[inp]);
             }
-        } else if (node->kind == OpKind::FusedMatmul) {
-            // Cast epilogue fn; BLAS dispatch happens in execute()
+            cf.calls.push_back(std::move(kc));
+
+        } else if (node->kind == OpKind::FusedMatmul && jit_names.count(node)) {
             kc.epilogue_fn = reinterpret_cast<EpilogueFn>(
-                reinterpret_cast<void(*)()>(jit.lookup(kname)));
-            // inputs: [A, B] or [A, B, bias_vec]
+                reinterpret_cast<void(*)()>(jit.lookup(jit_names[node])));
             kc.has_bias = (node->inputs.size() >= 3);
             for (auto* inp : node->inputs) {
                 assert(node_slot.count(inp));
                 kc.input_slots.push_back(node_slot[inp]);
             }
-            // Extract GEMM dims: A=[M,K], B=[K,N]
             auto& a_shape = node->inputs[0]->output_type.shape;
             auto& b_shape = node->inputs[1]->output_type.shape;
             kc.M = (a_shape.size() >= 2) ? a_shape[0] : 1;
             kc.K = a_shape.back();
             kc.N = b_shape.back();
+            cf.calls.push_back(std::move(kc));
+
+        } else if (node->kind == OpKind::VecLibCall) {
+            kc.is_veclib = true;
+            kc.veclib_fn = node->veclib_fn;
+            assert(node->inputs.size() == 1 && "VecLibCall must be unary");
+            assert(node_slot.count(node->inputs[0]));
+            kc.input_slots.push_back(node_slot[node->inputs[0]]);
+            cf.calls.push_back(std::move(kc));
         }
-        cf.calls.push_back(std::move(kc));
     }
 
     return cf;
@@ -116,7 +163,15 @@ float* CompiledFunction::execute(std::vector<float*> user_inputs) {
         std::vector<float*> in_ptrs;
         for (int s : kc.input_slots) in_ptrs.push_back(resolve(s));
 
-        if (kc.epilogue_fn) {
+        if (kc.is_veclib) {
+#ifdef __APPLE__
+            // VecLibCall: dispatch through Apple vForce (vvexpf, vvtanhf, etc.)
+            dispatch_veclib(kc.veclib_fn, out, in_ptrs[0], (int)kc.numel);
+#else
+            // Should never reach here on Linux — VecLibSplitPass is a no-op.
+            (void)out;
+#endif
+        } else if (kc.epilogue_fn) {
             // FusedMatmul: BLAS GEMM then fused epilogue (bias + activation) in-place.
             float* A    = in_ptrs[0];
             float* B    = in_ptrs[1];
@@ -130,7 +185,6 @@ float* CompiledFunction::execute(std::vector<float*> user_inputs) {
                               B, (int)kc.N,
                         0.0f, out, (int)kc.N);
 
-            // Epilogue runs in-place: reads mm_out, writes final_out (same buffer).
             kc.epilogue_fn(out, bias, out, kc.numel, kc.has_bias);
         } else if (kc.fn) {
             // FusedKernel: void kernel(float** inputs, int num, float* out, i64 n)

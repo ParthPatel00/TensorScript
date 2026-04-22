@@ -48,6 +48,7 @@ const char* op_name(OpKind k) {
     case OpKind::BiasAdd:     return "BiasAdd";
     case OpKind::FusedKernel: return "FusedKernel";
     case OpKind::FusedMatmul: return "FusedMatmul";
+    case OpKind::VecLibCall:  return "VecLibCall";
     default:                  return "Unknown";
     }
 }

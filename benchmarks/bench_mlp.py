@@ -6,7 +6,7 @@ import sys, os, json, time
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'build'))
 
 import numpy as np
-import tensorscript as ts
+import fuse as ts
 
 try:
     import torch
@@ -29,7 +29,7 @@ weights  = [randn(HIDDEN, HIDDEN) for _ in range(LAYERS)]
 biases   = [randn(HIDDEN)         for _ in range(LAYERS)]
 x_input  = randn(1, HIDDEN)
 
-# ── TensorScript graph ────────────────────────────────────────────────────────
+# ── Fuse graph ────────────────────────────────────────────────────────
 # Register graph inputs in the same interleaved order as make_ts_inputs():
 # x, W0, b0, W1, b1, ..., W3, b3
 g   = ts.Graph()
@@ -78,7 +78,7 @@ print("Correctness: PASS")
 # ── Timing ────────────────────────────────────────────────────────────────────
 results = {}
 
-results["tensorscript"] = {"mean_ms": bench(ts_fn, *ts_inputs)}
+results["fuse"] = {"mean_ms": bench(ts_fn, *ts_inputs)}
 results["numpy"]        = {"mean_ms": bench(numpy_mlp, x_input)}
 
 if HAS_TORCH:
@@ -102,7 +102,7 @@ if HAS_TORCH:
     except Exception as e:
         print(f"  torch.compile unavailable: {e}")
 
-ts_ms = results["tensorscript"]["mean_ms"]
+ts_ms = results["fuse"]["mean_ms"]
 np_ms = results["numpy"]["mean_ms"]
 results["speedup_vs_numpy"] = np_ms / ts_ms
 if "pytorch_eager" in results:
@@ -119,7 +119,7 @@ results["config"] = {
 
 print(f"\n4-layer {HIDDEN}-hidden MLP (batch=1)")
 print(f"  NumPy:           {np_ms:.4f} ms")
-print(f"  TensorScript:    {ts_ms:.4f} ms  ({np_ms/ts_ms:.2f}x vs NumPy)")
+print(f"  Fuse:    {ts_ms:.4f} ms  ({np_ms/ts_ms:.2f}x vs NumPy)")
 if "pytorch_eager" in results:
     print(f"  PyTorch eager:   {results['pytorch_eager']['mean_ms']:.4f} ms"
           f"  ({results['speedup_vs_pytorch_eager']:.2f}x vs PyTorch eager)")

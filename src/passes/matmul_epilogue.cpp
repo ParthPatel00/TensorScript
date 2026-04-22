@@ -92,7 +92,7 @@ void MatmulEpiloguePass::run(Graph& g) {
     }
 
     if (fused > 0)
-        std::cout << "[TensorScript] MatmulEpiloguePass: fused " << fused << " Matmul(s)\n";
+        std::cout << "[Fuse] MatmulEpiloguePass: fused " << fused << " Matmul(s)\n";
 }
 
 } // namespace ts

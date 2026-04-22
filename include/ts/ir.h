@@ -31,7 +31,12 @@ enum class OpKind {
     BiasAdd,
     FusedKernel,  // element-wise chain collapsed by FusionPass
     FusedMatmul,  // Matmul + optional BiasAdd + optional activation
+    VecLibCall,   // Apple vecLib array-math call (macOS/ARM only; no-op pass on Linux)
 };
+
+// Which Apple vForce/vDSP function to call for a VecLibCall node.
+// Sigmoid is decomposed into vneg + vvexpf + vsadd + svdiv in runtime.cpp.
+enum class VecLibFn { Exp, Log, Tanh, Sigmoid };
 
 // One step inside a FusedKernel loop body.
 // acc starts as inputs[0][i]; each step updates acc.
@@ -56,6 +61,9 @@ struct Node {
 
     // Assigned by BufferReusePass; -1 = not yet assigned
     int buffer_slot = -1;
+
+    // VecLibCall: which Apple vecLib function to dispatch (ignored for other kinds)
+    VecLibFn veclib_fn = VecLibFn::Exp;
 
     // Constant data (only for OpKind::Constant)
     std::vector<float> const_data;

@@ -6,7 +6,7 @@ import sys, os, json, time
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'build'))
 
 import numpy as np
-import tensorscript as ts
+import fuse as ts
 
 try:
     import torch
@@ -36,7 +36,7 @@ def numpy_chain(a, b):
     x = 1 / (1 + np.exp(-x))
     return np.tanh(x)
 
-# ── TensorScript ──────────────────────────────────────────────────────────────
+# ── Fuse ──────────────────────────────────────────────────────────────
 g = ts.Graph()
 a_h = g.input("a", [N])
 b_h = g.input("b", [N])
@@ -68,13 +68,13 @@ print("Correctness: PASS")
 # ── Timing ────────────────────────────────────────────────────────────────────
 results = {}
 results["numpy"]         = {"mean_ms": bench(numpy_chain, a_np, b_np)}
-results["tensorscript"]  = {"mean_ms": bench(ts_fn, a_np, b_np)}
+results["fuse"]  = {"mean_ms": bench(ts_fn, a_np, b_np)}
 if HAS_TORCH:
     results["pytorch_eager"] = {"mean_ms": bench(torch_chain, a_t, b_t)}
 
 results["config"] = {"N": N, "chain_length": 5, "ops": ["add","relu","mul","sigmoid","tanh"]}
 
-ts_ms  = results["tensorscript"]["mean_ms"]
+ts_ms  = results["fuse"]["mean_ms"]
 np_ms  = results["numpy"]["mean_ms"]
 results["speedup_vs_numpy"] = np_ms / ts_ms
 if HAS_TORCH:
@@ -83,7 +83,7 @@ if HAS_TORCH:
 
 print(f"\nElement-wise chain (N={N:,}, 5 ops)")
 print(f"  NumPy:        {np_ms:.3f} ms")
-print(f"  TensorScript: {ts_ms:.3f} ms  ({np_ms/ts_ms:.2f}x vs NumPy)")
+print(f"  Fuse: {ts_ms:.3f} ms  ({np_ms/ts_ms:.2f}x vs NumPy)")
 if HAS_TORCH:
     print(f"  PyTorch:      {pt_ms:.3f} ms  ({pt_ms/ts_ms:.2f}x vs PyTorch)")
 

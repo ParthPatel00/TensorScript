@@ -1,5 +1,5 @@
-; ModuleID = 'tensorscript'
-source_filename = "tensorscript"
+; ModuleID = 'fuse'
+source_filename = "fuse"
 
 ; Function Attrs: nofree norecurse nosync nounwind memory(read, argmem: readwrite, inaccessiblemem: none, target_mem0: none, target_mem1: none)
 define void @kernel_0(ptr noalias readonly captures(none) %inputs, i32 %0, ptr noalias writeonly captures(none) %out, i64 %n) local_unnamed_addr #0 {
@@ -20,19 +20,8 @@ loop:                                             ; preds = %loop, %preheader
   %gep_in1 = getelementptr float, ptr %base1, i64 %i
   %in1 = load float, ptr %gep_in1, align 4
   %add = fadd float %in0, %in1
-  %relu = tail call float @llvm.maxnum.f32(float %add, float 0.000000e+00)
-  %1 = fneg float %in1
-  %neg_x = fmul float %relu, %1
-  %exp_neg = tail call float @llvm.exp.f32(float %neg_x)
-  %denom = fadd float %exp_neg, 1.000000e+00
-  %sigmoid = fdiv float 1.000000e+00, %denom
-  %two_x = fmul float %sigmoid, 2.000000e+00
-  %exp2x = tail call float @llvm.exp.f32(float %two_x)
-  %tanh_num = fadd float %exp2x, -1.000000e+00
-  %tanh_den = fadd float %exp2x, 1.000000e+00
-  %tanh = fdiv float %tanh_num, %tanh_den
   %gep_out = getelementptr float, ptr %out, i64 %i
-  store float %tanh, ptr %gep_out, align 4
+  store float %add, ptr %gep_out, align 4
   %i_next = add nuw i64 %i, 1
   %done = icmp eq i64 %i_next, %n
   br i1 %done, label %exit, label %loop, !llvm.loop !0
@@ -41,14 +30,7 @@ exit:                                             ; preds = %loop, %entry
   ret void
 }
 
-; Function Attrs: mustprogress nocallback nocreateundeforpoison nofree nosync nounwind speculatable willreturn memory(none)
-declare float @llvm.maxnum.f32(float, float) #1
-
-; Function Attrs: mustprogress nocallback nocreateundeforpoison nofree nosync nounwind speculatable willreturn memory(none)
-declare float @llvm.exp.f32(float) #1
-
 attributes #0 = { nofree norecurse nosync nounwind memory(read, argmem: readwrite, inaccessiblemem: none, target_mem0: none, target_mem1: none) }
-attributes #1 = { mustprogress nocallback nocreateundeforpoison nofree nosync nounwind speculatable willreturn memory(none) }
 
 !0 = !{!1}
 !1 = !{!"llvm.loop.vectorize.enable", i1 true}

@@ -11,10 +11,10 @@ namespace ts {
 // Kernel function signature: inputs array, num_inputs, output, element count
 using KernelFn = void(*)(float**, int, float*, int64_t);
 
-class TensorScriptJIT {
+class FuseJIT {
 public:
-    TensorScriptJIT();
-    ~TensorScriptJIT();
+    FuseJIT();
+    ~FuseJIT();
 
     // Takes ownership of module + ctx; compiles with O3
     void add_module(std::unique_ptr<llvm::LLVMContext> ctx,

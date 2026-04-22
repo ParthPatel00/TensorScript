@@ -14,11 +14,11 @@
 
 namespace ts {
 
-struct TensorScriptJIT::Impl {
+struct FuseJIT::Impl {
     std::unique_ptr<llvm::orc::LLJIT> jit;
 };
 
-TensorScriptJIT::TensorScriptJIT() : impl_(std::make_unique<Impl>()) {
+FuseJIT::FuseJIT() : impl_(std::make_unique<Impl>()) {
     llvm::InitializeNativeTarget();
     llvm::InitializeNativeTargetAsmPrinter();
     llvm::InitializeNativeTargetAsmParser();
@@ -33,7 +33,7 @@ TensorScriptJIT::TensorScriptJIT() : impl_(std::make_unique<Impl>()) {
     impl_->jit = std::move(*jit);
 }
 
-TensorScriptJIT::~TensorScriptJIT() = default;
+FuseJIT::~FuseJIT() = default;
 
 static void optimize_module(llvm::Module& m) {
     llvm::PassBuilder pb;
@@ -53,7 +53,7 @@ static void optimize_module(llvm::Module& m) {
     mpm.run(m, mam);
 }
 
-void TensorScriptJIT::add_module(std::unique_ptr<llvm::LLVMContext> ctx,
+void FuseJIT::add_module(std::unique_ptr<llvm::LLVMContext> ctx,
                                   std::unique_ptr<llvm::Module> module) {
     optimize_module(*module);
 
@@ -75,10 +75,10 @@ void TensorScriptJIT::add_module(std::unique_ptr<llvm::LLVMContext> ctx,
         os << std::move(err);
         throw std::runtime_error("JIT addIRModule failed: " + msg);
     }
-    std::cout << "[TensorScript] JIT: module compiled\n";
+    std::cout << "[Fuse] JIT: module compiled\n";
 }
 
-KernelFn TensorScriptJIT::lookup(const std::string& name) {
+KernelFn FuseJIT::lookup(const std::string& name) {
     auto sym = impl_->jit->lookup(name);
     if (!sym) {
         std::string msg;

@@ -75,7 +75,7 @@ void BufferReusePass::run(Graph& g) {
     }
 
     num_slots = (int)slots.size();
-    std::cout << "[TensorScript] BufferReusePass: "
+    std::cout << "[Fuse] BufferReusePass: "
               << ranges.size() << " buffers → " << num_slots << " slot(s)\n";
 }
 

@@ -23,7 +23,7 @@ namespace py = pybind11;
 // A Python-callable wrapper around CompiledFunction.
 struct PyCompiledFunction {
     std::shared_ptr<ts::CompiledFunction> fn;
-    std::shared_ptr<ts::TensorScriptJIT> jit;  // keep alive
+    std::shared_ptr<ts::FuseJIT> jit;  // keep alive
 
     py::array_t<float> call(py::args args) {
         std::vector<float*> ptrs;
@@ -80,7 +80,7 @@ struct PyGraph {
         auto cg = codegen.emit(g, dump_ir);
 
         // JIT
-        auto jit = std::make_shared<ts::TensorScriptJIT>();
+        auto jit = std::make_shared<ts::FuseJIT>();
         jit->add_module(std::move(cg.ctx), std::move(cg.module));
 
         // Build runtime
@@ -97,8 +97,8 @@ struct PyGraph {
     void to_dot(const std::string& path) { g.to_dot(path); }
 };
 
-PYBIND11_MODULE(tensorscript, m) {
-    m.doc() = "TensorScript: a C++/LLVM ML compiler";
+PYBIND11_MODULE(fuse, m) {
+    m.doc() = "Fuse: a C++/LLVM ML compiler";
 
     py::class_<PyCompiledFunction>(m, "CompiledFunction")
         .def("__call__", &PyCompiledFunction::call);

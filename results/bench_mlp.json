@@ -1,19 +1,19 @@
 {
   "tensorscript": {
-    "mean_ms": 0.006514999899081886
+    "mean_ms": 0.005229750066064298
   },
   "numpy": {
-    "mean_ms": 0.011393083957955241
+    "mean_ms": 0.010098833939991891
   },
   "pytorch_eager": {
-    "mean_ms": 0.01242708193603903
+    "mean_ms": 0.010927916038781404
   },
   "pytorch_compile": {
-    "mean_ms": 0.01812533405609429
+    "mean_ms": 0.01722433406393975
   },
-  "speedup_vs_numpy": 1.7487466054390561,
-  "speedup_vs_pytorch_eager": 1.9074569652395994,
-  "speedup_vs_pytorch_compile": 2.782092760837735,
+  "speedup_vs_numpy": 1.931035673295927,
+  "speedup_vs_pytorch_eager": 2.089567551170819,
+  "speedup_vs_pytorch_compile": 3.293529106812957,
   "config": {
     "hidden": 256,
     "layers": 4,

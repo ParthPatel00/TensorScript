@@ -1,12 +1,12 @@
 {
   "numpy": {
-    "mean_ms": 2.791801249841228
+    "mean_ms": 2.6845766650512815
   },
   "tensorscript": {
-    "mean_ms": 2.751380830013659
+    "mean_ms": 1.3863941651652567
   },
   "pytorch_eager": {
-    "mean_ms": 1.0591606251546182
+    "mean_ms": 1.5170716651482508
   },
   "config": {
     "N": 1000000,
@@ -19,6 +19,6 @@
       "tanh"
     ]
   },
-  "speedup_vs_numpy": 1.0146909578589194,
-  "speedup_vs_pytorch": 0.3849560241173012
+  "speedup_vs_numpy": 1.9363733146779962,
+  "speedup_vs_pytorch": 1.0942571047011131
 }

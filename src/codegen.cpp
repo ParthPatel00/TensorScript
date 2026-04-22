@@ -253,7 +253,7 @@ static Function* emit_matmul_epilogue(Module* m, const std::string& name,
 
 CodegenResult LLVMCodegen::emit(const Graph& g, bool dump_ir) {
     auto ctx    = std::make_unique<LLVMContext>();
-    auto module = std::make_unique<Module>("tensorscript", *ctx);
+    auto module = std::make_unique<Module>("fuse", *ctx);
 
     std::vector<std::pair<std::string, Node*>> kernels;
     int kid = 0;
@@ -270,13 +270,14 @@ CodegenResult LLVMCodegen::emit(const Graph& g, bool dump_ir) {
             emit_matmul_epilogue(module.get(), kname, node);
             kernels.push_back({kname, node});
         }
+        // VecLibCall: no LLVM IR generated — dispatched directly by runtime.cpp
     }
 
     // Verify
     std::string err;
     raw_string_ostream os(err);
     if (verifyModule(*module, &os)) {
-        std::cerr << "[TensorScript] LLVM module verification failed:\n" << err << "\n";
+        std::cerr << "[Fuse] LLVM module verification failed:\n" << err << "\n";
     }
 
     if (dump_ir) {
@@ -285,7 +286,7 @@ CodegenResult LLVMCodegen::emit(const Graph& g, bool dump_ir) {
         module->print(iros, nullptr);
         std::ofstream f("results/kernel_scalar.ll");
         f << ir_str;
-        std::cout << "[TensorScript] Wrote results/kernel_scalar.ll\n";
+        std::cout << "[Fuse] Wrote results/kernel_scalar.ll\n";
     }
 
     return {std::move(ctx), std::move(module), std::move(kernels)};
