@@ -7,6 +7,7 @@
 #include "llvm/IR/Verifier.h"
 #include "llvm/IR/IntrinsicsX86.h"
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/Config/llvm-config.h"
 
 #include <cassert>
 #include <fstream>
@@ -17,9 +18,13 @@ namespace ts {
 
 using namespace llvm;
 
-// Intrinsic::getDeclaration was removed in LLVM 18; use getOrInsertDeclaration.
+// getOrInsertDeclaration was introduced in LLVM 20; use getDeclaration on older versions.
 static Function* get_intrinsic(Module* m, Intrinsic::ID id, Type* ty) {
+#if LLVM_VERSION_MAJOR >= 20
     return Intrinsic::getOrInsertDeclaration(m, id, {ty});
+#else
+    return Intrinsic::getDeclaration(m, id, {ty});
+#endif
 }
 
 // Emit one element of sigmoid: 1 / (1 + exp(-x))
