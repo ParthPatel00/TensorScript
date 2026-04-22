@@ -30,10 +30,10 @@ jobs:
       run: |
         wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key \
           | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
-        echo "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-18 main" \
-          | sudo tee /etc/apt/sources.list.d/llvm-18.list
+        echo "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-19 main" \
+          | sudo tee /etc/apt/sources.list.d/llvm-19.list
         sudo apt-get update
-        sudo apt-get install -y llvm-18-dev libllvm18 clang-18 libopenblas-dev
+        sudo apt-get install -y llvm-19-dev libllvm19 clang-19 libopenblas-dev
 
     - name: Install LLVM (macOS)
       if: runner.os == 'macOS'
@@ -43,9 +43,9 @@ jobs:
       if: runner.os == 'Linux'
       run: |
         cmake -B build -DCMAKE_BUILD_TYPE=Release \
-          -DLLVM_DIR=$(llvm-config-18 --cmakedir) \
-          -DCMAKE_C_COMPILER=clang-18 \
-          -DCMAKE_CXX_COMPILER=clang++-18 \
+          -DLLVM_DIR=$(llvm-config-19 --cmakedir) \
+          -DCMAKE_C_COMPILER=clang-19 \
+          -DCMAKE_CXX_COMPILER=clang++-19 \
           -DPython3_EXECUTABLE=$(which python) \
           -Dpybind11_DIR=$(python -c "import pybind11; print(pybind11.get_cmake_dir())")
 
